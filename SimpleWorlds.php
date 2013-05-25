@@ -17,6 +17,9 @@ Small Changelog
 0.1
 - Initial release
 
+0.2
+- Unload support
+
 */
 
 
@@ -28,8 +31,9 @@ class SimpleWorlds implements Plugin{
 	}
 	
 	public function init(){
-		$this->api->console->register("simpleworlds", "load <level> OR /simpleworlds generate <seed> <generator> <level>", array($this, "command"));
+		$this->api->console->register("simpleworlds", "load/unload <level> OR /simpleworlds generate <seed> <generator> <level>", array($this, "command"));
 		$this->api->console->alias("sw", "simpleworlds");
+		$this->api->console->alias("swu", "simpleworlds unload");
 		$this->api->console->alias("swl", "simpleworlds load");
 		$this->api->console->alias("swg", "simpleworlds generate");
 		$this->config = new Config($this->api->plugin->configPath($this)."config.yml", CONFIG_YAML, array(
@@ -53,6 +57,16 @@ class SimpleWorlds implements Plugin{
 
 			$subcmd = strtolower(array_shift($params));
 			switch($subcmd){
+				case "unload":
+					$level = $this->api->level->get(implode(" ", $params));
+					if($level instanceof Level){
+						if($this->api->level->unloadLevel($level) === true){
+							$output .= "Level unloaded.\n";
+							break;
+						}
+					}
+					$output .= "Error unloading level.\n";
+					break;
 				case "load":
 					if($this->loadLevel(implode(" ", $params)) === false){
 						$output .= "Error loading level.\n";
