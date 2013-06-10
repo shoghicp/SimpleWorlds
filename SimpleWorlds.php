@@ -7,7 +7,7 @@ description=Simple world loader & generator
 version=0.1
 author=shoghicp
 class=SimpleWorlds
-apiversion=7,8
+apiversion=7,8,9
 */
 
 /* 
