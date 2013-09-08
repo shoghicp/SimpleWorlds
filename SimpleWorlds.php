@@ -4,7 +4,7 @@
 __PocketMine Plugin__
 name=SimpleWorlds
 description=Simple world loader & generator
-version=0.1
+version=0.2
 author=shoghicp
 class=SimpleWorlds
 apiversion=7,8,9,10
