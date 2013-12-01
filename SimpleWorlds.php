@@ -7,7 +7,7 @@ description=Simple world loader, generator, exporter
 version=0.3
 author=PocketMine Team
 class=SimpleWorlds
-apiversion=7,8,9,10
+apiversion=7,8,9,10,11
 */
 
 /* 
@@ -124,7 +124,7 @@ class SimpleWorlds implements Plugin{
 				$chunk = "";
 				$miniChunks = array();
 				for($Y = 0; $Y < 8; ++$Y){
-					$miniChunks[$Y] = $level->getMiniChunk($X, $Y, $Z);
+					$miniChunks[$Y] = $level->level->getMiniChunk($X, $Z, $Y);
 				}
 				$columns = array();
 				for($x = 0; $x < 16; ++$x){
