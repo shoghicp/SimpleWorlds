@@ -114,6 +114,7 @@ class SimpleWorlds implements Plugin{
 	}
 	
 	public function exportLevel(Level $level){
+		$level->save(false, true);
 		@mkdir($this->api->plugin->configPath($this)."export/");
 		$path = $this->api->plugin->configPath($this)."export/".$level->getName()."/";
 		@mkdir($path);
@@ -130,18 +131,18 @@ class SimpleWorlds implements Plugin{
 				for($x = 0; $x < 16; ++$x){
 					for($z = 0; $z < 16; ++$z){
 						$index = ($x << 4) + $z;
-						$j = ($z << 4) + $x;
+						$j = ($z << 9) + ($x << 5);
 						$columns[$index] = array("", "", str_repeat("\x00", 64), str_repeat("\x00", 64));
 						foreach($miniChunks as $raw){
-							$columns[$index][0] .= substr($raw, $j << 5, 16); //Block IDs
-							$columns[$index][1] .= substr($raw, ($j << 5) + 16, 8); //Block Metadata
+							$columns[$index][0] .= substr($raw, $j, 16); //Block IDs
+							$columns[$index][1] .= substr($raw, $j + 16, 8); //Block Metadata
 						}
 					}
 				}
 				for($i = 0; $i < 4; ++$i){
 					for($x = 0; $x < 16; ++$x){
 						for($z = 0; $z < 16; ++$z){
-							$chunk .= $columns[$x << 4 + $z][$i];
+							$chunk .= $columns[($x << 4) + $z][$i];
 						}
 					}
 				}
@@ -150,6 +151,156 @@ class SimpleWorlds implements Plugin{
 				fwrite($chunks, Utils::writeLInt(strlen($chunk)) . $chunk);
 			}
 		}
+		
+		fclose($chunks);
+		
+		$nbt = new NBT();
+		$nbt->write(chr(NBT::TAG_COMPOUND)."\x00\x00");
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("GameType");
+			$nbt->writeTAG_Int(0);
+			//$nbt->writeTAG_Int((int) $level->getGamemode());
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("LastPlayed");
+			$nbt->writeTAG_Int(time());
+
+			$nbt->write(chr(NBT::TAG_STRING));
+			$nbt->writeTAG_String("LevelName");
+			$nbt->writeTAG_String($level->getName());
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("Platform");
+			$nbt->writeTAG_Int(2);
+			
+			$nbt->write(chr(NBT::TAG_COMPOUND));
+			$nbt->writeTAG_String("Player");
+			//Nothing here!
+			$nbt->write(chr(NBT::TAG_END));
+			
+			$nbt->write(chr(NBT::TAG_LONG));
+			$nbt->writeTAG_String("RandomSeed");
+			$nbt->writeTAG_Long($level->getSeed());
+
+			$nbt->write(chr(NBT::TAG_LONG));
+			$nbt->writeTAG_String("SizeOnDisk");
+			$nbt->writeTAG_Long(filesize($path."chunks.dat"));
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("SpawnX");
+			$nbt->writeTAG_Int((int) $level->getSpawn()->x);
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("SpawnY");
+			$nbt->writeTAG_Int((int) $level->getSpawn()->y);
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("SpawnZ");
+			$nbt->writeTAG_Int((int) $level->getSpawn()->z);
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("StorageVersion");
+			$nbt->writeTAG_Int(3);
+
+			$nbt->write(chr(NBT::TAG_INT));
+			$nbt->writeTAG_String("Time");
+			$nbt->writeTAG_Int($level->getTime());		
+		$nbt->write(chr(NBT::TAG_END));
+		
+		@file_put_contents($path."level.dat", Utils::writeLInt(3).Utils::writeLInt(strlen($nbt->binary)).$nbt->binary);
+		$nbt->binary = b"";
+		
+		$nbt->write(chr(NBT::TAG_COMPOUND)."\x00\x00");
+			$nbt->write(chr(NBT::TAG_LIST));
+			$nbt->writeTAG_String("Entities");
+			$nbt->writeTAG_Byte(NBT::TAG_COMPOUND);
+			$nbt->writeTAG_Int(0);
+
+			$nbt->write(chr(NBT::TAG_LIST));
+			$nbt->writeTAG_String("TileEntities");
+			$nbt->writeTAG_Byte(NBT::TAG_COMPOUND);
+			$tiles = $level->tiles->getAll();
+			$nbt->writeTAG_Int(count($tiles));
+			foreach($tiles as $tid => $data){				
+				$nbt->write(chr(NBT::TAG_STRING));
+				$nbt->writeTAG_String("id");
+				$nbt->writeTAG_String($data["id"]);
+				
+				$nbt->write(chr(NBT::TAG_INT));
+				$nbt->writeTAG_String("x");
+				$nbt->writeTAG_Int($data["x"]);
+				
+				$nbt->write(chr(NBT::TAG_INT));
+				$nbt->writeTAG_String("y");
+				$nbt->writeTAG_Int($data["y"]);
+				
+				$nbt->write(chr(NBT::TAG_INT));
+				$nbt->writeTAG_String("z");
+				$nbt->writeTAG_Int($data["z"]);
+				
+				if($data["id"] === "Sign"){					
+					$nbt->write(chr(NBT::TAG_STRING));
+					$nbt->writeTAG_String("Text1");
+					$nbt->writeTAG_String($data["Text1"]);
+					
+					$nbt->write(chr(NBT::TAG_STRING));
+					$nbt->writeTAG_String("Text2");
+					$nbt->writeTAG_String($data["Text2"]);
+					
+					$nbt->write(chr(NBT::TAG_STRING));
+					$nbt->writeTAG_String("Text3");
+					$nbt->writeTAG_String($data["Text3"]);
+						
+					$nbt->write(chr(NBT::TAG_STRING));
+					$nbt->writeTAG_String("Text4");
+					$nbt->writeTAG_String($data["Text4"]);
+				}elseif($data["id"] === "Furnace"){
+					$nbt->write(chr(NBT::TAG_SHORT));
+					$nbt->writeTAG_String("BurnTime");
+					$nbt->writeTAG_Short($data["BurnTime"]);
+					
+					$nbt->write(chr(NBT::TAG_SHORT));
+					$nbt->writeTAG_String("CookTime");
+					$nbt->writeTAG_Short($data["CookTime"]);
+				}elseif($data["id"] === "Chest" and isset($data["pairx"]) and isset($data["pairz"])){
+					$nbt->write(chr(NBT::TAG_INT));
+					$nbt->writeTAG_String("pairx");
+					$nbt->writeTAG_Int($data["pairx"]);
+					
+					$nbt->write(chr(NBT::TAG_INT));
+					$nbt->writeTAG_String("pairz");
+					$nbt->writeTAG_Int($data["pairz"]);
+				}
+				
+				if($data["id"] === "Furnace" or $data["id"] === "Chest"){
+					$nbt->write(chr(NBT::TAG_LIST));
+					$nbt->writeTAG_String("Items");
+					$nbt->writeTAG_Byte(NBT::TAG_COMPOUND);
+					$nbt->writeTAG_Int(count($data["Items"]));
+					foreach($data["Items"] as $index => $item){
+						$nbt->write(chr(NBT::TAG_BYTE));
+						$nbt->writeTAG_String("Slot");
+						$nbt->writeTAG_Byte($item["Slot"]);
+							
+						$nbt->write(chr(NBT::TAG_SHORT));
+						$nbt->writeTAG_String("id");
+						$nbt->writeTAG_Short($data["id"]);
+						
+						$nbt->write(chr(NBT::TAG_SHORT));
+						$nbt->writeTAG_String("Damage");
+						$nbt->writeTAG_Short($data["Damage"]);
+							
+						$nbt->write(chr(NBT::TAG_BYTE));
+						$nbt->writeTAG_String("Count");
+						$nbt->writeTAG_Byte($item["Count"]);
+						
+						$nbt->write(chr(NBT::TAG_END));
+					}
+				}
+				$nbt->write(chr(NBT::TAG_END));
+			}
+		$nbt->write(chr(NBT::TAG_END));
+		@file_put_contents($path."entities.dat", "ENT\x00".Utils::writeLInt(1).Utils::writeLInt(strlen($nbt->binary)).$nbt->binary);
 	}
 
 	public function loadLevel($name){
