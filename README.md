@@ -1,4 +1,4 @@
 SimpleWorlds
 ============
 
-Simple plugin that loads/imports worlds, and is able to autoload levels at start.
+Simple plugin that imports/exports worlds, and is able to autoload levels at start.
