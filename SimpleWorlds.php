@@ -4,10 +4,10 @@
 __PocketMine Plugin__
 name=SimpleWorlds
 description=Simple world loader, generator, exporter
-version=0.3
+version=0.3.1
 author=PocketMine Team
 class=SimpleWorlds
-apiversion=7,8,9,10,11
+apiversion=7,8,9,10,11,12
 */
 
 /* 
@@ -22,6 +22,9 @@ Small Changelog
 
 0.3
 - Export levels to MCPE format
+
+0.3.1
+- Alpha_1.3.12
 
 */
 
