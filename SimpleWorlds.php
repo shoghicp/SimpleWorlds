@@ -38,15 +38,6 @@ class SimpleWorlds implements Plugin{
 		if(substr(self::$chunkHeader, 0, 9) === "base64://"){
 			self::$chunkHeader = gzinflate(base64_decode(substr(self::$chunkHeader, 9)));
 		}
-	}
-	
-	public function init(){
-		$this->api->console->register("simpleworlds", "<command> [parameters...]", array($this, "command"));
-		$this->api->console->alias("sw", "simpleworlds");
-		$this->api->console->alias("swe", "simpleworlds export");
-		$this->api->console->alias("swu", "simpleworlds unload");
-		$this->api->console->alias("swl", "simpleworlds load");
-		$this->api->console->alias("swg", "simpleworlds generate");
 		$this->config = new Config($this->api->plugin->configPath($this)."config.yml", CONFIG_YAML, array(
 			"default-generator" => "SuperflatGenerator",
 			"autogenerate" => false,
@@ -56,6 +47,15 @@ class SimpleWorlds implements Plugin{
 		foreach($this->config->get("autoload") as $level){
 			$this->loadLevel($level);		
 		}
+	}
+	
+	public function init(){
+		$this->api->console->register("simpleworlds", "<command> [parameters...]", array($this, "command"));
+		$this->api->console->alias("sw", "simpleworlds");
+		$this->api->console->alias("swe", "simpleworlds export");
+		$this->api->console->alias("swu", "simpleworlds unload");
+		$this->api->console->alias("swl", "simpleworlds load");
+		$this->api->console->alias("swg", "simpleworlds generate");
 	}
 	
 	public function command($cmd, $params, $issuer, $alias){
