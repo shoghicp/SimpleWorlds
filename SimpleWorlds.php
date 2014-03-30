@@ -47,6 +47,8 @@ class SimpleWorlds implements Plugin{
 		$this->api->console->alias("swu", "simpleworlds unload");
 		$this->api->console->alias("swl", "simpleworlds load");
 		$this->api->console->alias("swg", "simpleworlds generate");
+		$this->api->console->alias("swls", "simpleworlds list");
+		$this->api->console->alias("swd", "simpleworlds delete");
 		$this->config = new Config($this->api->plugin->configPath($this)."config.yml", CONFIG_YAML, array(
 			"default-generator" => "SuperflatGenerator",
 			"autogenerate" => false,
@@ -61,12 +63,14 @@ class SimpleWorlds implements Plugin{
 	public function command($cmd, $params, $issuer, $alias){
 		$output = "";
 		if($cmd === "simpleworlds"){
-			if(count($params) < 2){
+			if(count($params) < 2 && $params[0] != "list"){
 				$output .= "Usage: /$cmd <command> [parameters...]\n";
 				$output .= "/$cmd load <levelName>: Loads a level on file.\n";
 				$output .= "/$cmd unload <levelName>: Safely unload a level.\n";
 				$output .= "/$cmd export <levelName>: Exports a loaded level to MCPE format.\n";
 				$output .= "/$cmd generate <seed> <generatorName> <levelName>: Generates a new world usign a generator with an specific seed.\n";
+				$output .= "/$cmd list: List all available levels.\n";
+				$output .= "/$cmd delete: Delete the specific level.\n";
 				return $output;
 			}
 
@@ -109,6 +113,42 @@ class SimpleWorlds implements Plugin{
 						$output .= "Error generating level.\n";
 					}else{
 						$output .= "Level generated.\n";
+					}
+					break;
+				case "list":
+
+					$ouput .= "The following levels are available:";
+					if ($handle = opendir(DATA_PATH . '/worlds/')) {
+
+						while (false !== ($entry = readdir($handle))) {
+							if ($entry[0] != ".") {
+								$output .= $entry . "\n";
+							}
+						}
+
+						closedir($handle);
+					}
+					break;
+				case "delete":
+					$name = implode(" ", $params);
+					if (strpos($name, "..") !== false){
+						$output .= "Invalid level name";
+						break;
+					}
+
+					$level = $this->api->level->get($name);
+					if($level instanceof Level){
+						if($this->api->level->unloadLevel($level) !== true){
+							$output .= "Failed to unload level " . $name . "\n";
+							break;
+						}
+					}
+
+					$dir = DATA_PATH . "worlds/" . $name;
+					if($this->deleteDir($dir)){
+						$output .= "Deleted level " . $name . "\n";
+					}else{
+						$output .= "Failed to delete level " . $name . "\n";
 					}
 					break;
 			}
@@ -326,7 +366,25 @@ class SimpleWorlds implements Plugin{
 		return $this->api->level->generateLevel($name, $seed, $generator);
 	}
 
-	
+	public function deleteDir($dirPath) {
+	    if (!is_dir($dirPath)) {
+	        return false;
+	    }
+
+	    $files = glob($dirPath . '*', GLOB_MARK);
+	    foreach ($files as $file) {
+	        if (is_dir($file)) {
+	            if (!$this->deleteDir($file))
+	            	return false;
+	        } else {
+	            unlink($file);
+	        }
+	    }
+	    rmdir($dirPath);
+	    return true;
+	}
+
+
 	public function __destruct(){
 
 	}
